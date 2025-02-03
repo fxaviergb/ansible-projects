@@ -1,0 +1,25 @@
+---
+- hosts: default
+  become: true
+
+  tasks:
+    - name: Actualizar paquetes del sistema
+      apt:
+        update_cache: yes
+
+    - name: Instalar NGINX
+      apt:
+        name: nginx
+        state: present
+
+    - name: Habilitar y arrancar el servicio NGINX
+      systemd:
+        name: nginx
+        enabled: yes
+        state: started
+
+    - name: Permitir tráfico HTTP en el firewall (UFW)
+      ufw:
+        rule: allow
+        port: "80"
+        proto: tcp

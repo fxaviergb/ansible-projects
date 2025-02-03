@@ -1,0 +1,55 @@
+---
+- hosts: default
+  become: true
+
+  tasks:
+    - name: Actualizar paquetes del sistema
+      apt:
+        update_cache: yes
+
+    - name: Instalar Apache
+      apt:
+        name: apache2
+        state: present
+
+    - name: Deshabilitar el sitio por defecto
+      command: a2dissite 000-default
+      notify: Reiniciar Apache
+
+    - name: Copiar configuración del nuevo sitio
+      template:
+        src: templates/mysite.conf
+        dest: /etc/apache2/sites-available/mysite.conf
+      notify: Reiniciar Apache
+
+    - name: Habilitar el nuevo sitio
+      command: a2ensite mysite
+      notify: Reiniciar Apache
+
+    - name: Crear directorio del nuevo sitio
+      file:
+        path: /var/www/mysite
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: "0755"
+
+    - name: Copiar archivo HTML de ejemplo
+      template:
+        src: templates/index.html
+        dest: /var/www/mysite/index.html
+        owner: www-data
+        group: www-data
+        mode: "0644"
+
+    - name: Habilitar tráfico HTTP en el firewall (UFW)
+      ufw:
+        rule: allow
+        port: "80"
+        proto: tcp
+
+  handlers:
+    - name: Reiniciar Apache
+      systemd:
+        name: apache2
+        state: restarted
